@@ -2,7 +2,6 @@ package drum
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -29,14 +28,8 @@ func DecodeFile(path string) (*Pattern, error) {
 
 func getPattern(in io.Reader) (*Pattern, error) {
 
-	var length uint8
-	magicNumberRef := [13]byte{
-		0x53, 0x50, 0x4c, 0x49, // SPLI
-		0x43, 0x45, 0x00, 0x00, // CE\0\0
-		0x00, 0x00, 0x00, 0x00, // \0\0\0\0
-		0x00, // \0
-	}
-	var magicNumber [13]byte
+	var length uint64
+	magicNumber := make([]byte, 6)
 	p := &Pattern{}
 	rawVersion := make([]byte, 32)
 
@@ -45,11 +38,11 @@ func getPattern(in io.Reader) (*Pattern, error) {
 		return nil, err
 	}
 
-	if magicNumber != magicNumberRef {
+	if string(magicNumber) != "SPLICE" {
 		return nil, fmt.Errorf("invalid magic number")
 	}
 
-	err = binary.Read(in, binary.LittleEndian, &length)
+	err = binary.Read(in, binary.BigEndian, &length)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +63,7 @@ func getPattern(in io.Reader) (*Pattern, error) {
 	length -= 4
 
 	var t *Track
-	var trackLength uint8
+	var trackLength uint64
 	for length > 0 {
 
 		t, trackLength, err = getTrack(in)
@@ -85,7 +78,7 @@ func getPattern(in io.Reader) (*Pattern, error) {
 	return p, nil
 }
 
-func getTrack(in io.Reader) (*Track, uint8, error) {
+func getTrack(in io.Reader) (*Track, uint64, error) {
 
 	var labelLength uint8
 	t := &Track{}
@@ -111,10 +104,10 @@ func getTrack(in io.Reader) (*Track, uint8, error) {
 
 	err = binary.Read(in, binary.LittleEndian, &t.Steps)
 	if err != nil {
-		return nil, 5 + labelLength, err
+		return nil, uint64(5 + labelLength), err
 	}
 
-	return t, 21 + labelLength, nil
+	return t, uint64(21 + labelLength), nil
 }
 
 // Pattern represents a pattern to be reconstructed and played by the drum machine.
@@ -142,7 +135,7 @@ type Track struct {
 
 func (track Track) String() string {
 	str := fmt.Sprintf("(%d) %s\t|", track.ID, track.Label)
-	for i, step := range this.Steps {
+	for i, step := range track.Steps {
 		if step == 0 {
 			str += "-"
 		} else {
