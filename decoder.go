@@ -30,7 +30,7 @@ func DecodeFile(path string) (*Pattern, error) {
 func getPattern(in io.Reader) (*Pattern, error) {
 
 	var length uint8
-	var magicNumberRef = [13]byte{
+	magicNumberRef := [13]byte{
 		0x53, 0x50, 0x4c, 0x49, // SPLI
 		0x43, 0x45, 0x00, 0x00, // CE\0\0
 		0x00, 0x00, 0x00, 0x00, // \0\0\0\0
@@ -46,7 +46,7 @@ func getPattern(in io.Reader) (*Pattern, error) {
 	}
 
 	if magicNumber != magicNumberRef {
-		return nil, errors.New("Invalid magic number")
+		return nil, fmt.Errorf("invalid magic number")
 	}
 
 	err = binary.Read(in, binary.LittleEndian, &length)
@@ -90,7 +90,7 @@ func getTrack(in io.Reader) (*Track, uint8, error) {
 	var labelLength uint8
 	t := &Track{}
 
-	err := binary.Read(in, binary.LittleEndian, &t.Id)
+	err := binary.Read(in, binary.LittleEndian, &t.ID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -117,29 +117,31 @@ func getTrack(in io.Reader) (*Track, uint8, error) {
 	return t, 21 + labelLength, nil
 }
 
+// Pattern represents a pattern to be reconstructed and played by the drum machine.
 type Pattern struct {
 	Version string
 	Tempo   float32
 	Tracks  []Track
 }
 
-func (this Pattern) String() string {
-	str := fmt.Sprintf("Saved with HW Version: %s\n", this.Version)
-	str += fmt.Sprintf("Tempo: %g\n", this.Tempo)
-	for _, t := range this.Tracks {
-		str += t.String()
+func (pattern Pattern) String() string {
+	str := fmt.Sprintf("Saved with HW Version: %s\n", pattern.Version)
+	str += fmt.Sprintf("Tempo: %g\n", pattern.Tempo)
+	for _, track := range pattern.Tracks {
+		str += track.String()
 	}
 	return str
 }
 
+// Track represents one of the tracks comprising a pattern.
 type Track struct {
-	Id    uint32
+	ID    uint32
 	Label string
 	Steps [16]byte
 }
 
-func (this Track) String() string {
-	str := fmt.Sprintf("(%d) %s\t|", this.Id, this.Label)
+func (track Track) String() string {
+	str := fmt.Sprintf("(%d) %s\t|", track.ID, track.Label)
 	for i, step := range this.Steps {
 		if step == 0 {
 			str += "-"
