@@ -1,14 +1,16 @@
-package main
+package drum
 
 import (
-	"drum"
 	"fmt"
 	"os"
 )
 
 func main() {
 
-	pattern := drum.DecodeFile(os.Args[1])
+	pattern, err := DecodeFile(os.Args[1])
+    if err != nil {
+        panic(err)
+    }
 
 	fmt.Println(pattern)
 }
