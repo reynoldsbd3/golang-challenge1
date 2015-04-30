@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 // DecodeFile decodes the drum machine file found at the provided path
@@ -58,7 +59,7 @@ func getPattern(in io.Reader) (*Pattern, error) {
 		return nil, err
 	}
 
-	p.Version = string(rawVersion)
+	p.Version = string(rawVersion[:strings.Index(string(rawVersion), "\x00")])
 	length -= 32
 
 	err = binary.Read(in, binary.LittleEndian, &p.Tempo)
