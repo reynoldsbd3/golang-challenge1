@@ -59,13 +59,61 @@ func getPattern(in io.Reader) (*Pattern, error) {
 	}
 
 	p.Version = string(rawVersion)
+	length -= 32
 
 	err = binary.Read(in, binary.LittleEndian, &p.Tempo)
 	if err != nil {
 		return nil, err
 	}
 
+	length -= 4
+
+	var t *Track
+	var trackLength uint8
+	for length > 0 {
+
+		t, trackLength, err = getTrack(in)
+		if err != nil {
+			return nil, err
+		}
+
+		p.Tracks = append(p.Tracks, *t)
+		length -= trackLength
+	}
+
 	return p, nil
+}
+
+func getTrack(in io.Reader) (*Track, uint8, error) {
+
+	var labelLength uint8
+	t := &Track{}
+
+	err := binary.Read(in, binary.LittleEndian, &t.Id)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	err = binary.Read(in, binary.LittleEndian, &labelLength)
+	if err != nil {
+		return nil, 4, err
+	}
+
+	rawLabel := make([]byte, labelLength)
+
+	err = binary.Read(in, binary.LittleEndian, &rawLabel)
+	if err != nil {
+		return nil, 5, err
+	}
+
+	t.Label = string(rawLabel)
+
+	err = binary.Read(in, binary.LittleEndian, &t.Steps)
+	if err != nil {
+		return nil, 5 + labelLength, err
+	}
+
+	return t, 21 + labelLength, nil
 }
 
 type Pattern struct {
@@ -77,6 +125,9 @@ type Pattern struct {
 func (this Pattern) String() string {
 	str := fmt.Sprintf("Saved with HW version: %s\n", this.Version)
 	str += fmt.Sprintf("Tempo: %g\n", this.Tempo)
+	for _, t := range this.Tracks {
+		str += t.String()
+	}
 	return str
 }
 
@@ -99,5 +150,6 @@ func (this Track) String() string {
 			str += "|"
 		}
 	}
+	str += "\n"
 	return str
 }
