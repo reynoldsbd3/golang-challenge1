@@ -124,7 +124,7 @@ type Pattern struct {
 }
 
 func (this Pattern) String() string {
-	str := fmt.Sprintf("Saved with HW version: %s\n", this.Version)
+	str := fmt.Sprintf("Saved with HW Version: %s\n", this.Version)
 	str += fmt.Sprintf("Tempo: %g\n", this.Tempo)
 	for _, t := range this.Tracks {
 		str += t.String()
@@ -144,7 +144,7 @@ func (this Track) String() string {
 		if step == 0 {
 			str += "-"
 		} else {
-			str += "X"
+			str += "x"
 		}
 
 		if i%4 == 3 {
